@@ -1,5 +1,7 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { KanbanBoard } from './components/KanbanBoard';
@@ -59,6 +61,65 @@ const App: React.FC = () => {
   const [showProductTour, setShowProductTour] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
+
+  // Initialize Supabase auth
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch profile data
+          setTimeout(async () => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile) {
+              const appUser: User = {
+                id: session.user.id,
+                name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'User',
+                email: session.user.email || '',
+                avatarUrl: profile.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.id}`,
+                role: 'Product Manager',
+                hasCompletedOnboarding: profile.has_completed_onboarding || false,
+              };
+              setCurrentUser(appUser);
+            }
+          }, 0);
+        } else {
+          setCurrentUser(null);
+        }
+        
+        setAuthInitialized(true);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) {
+        setAuthInitialized(true);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Handle loading state
+  useEffect(() => {
+    if (authInitialized) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [authInitialized]);
 
   useEffect(() => {
     document.body.className = `theme-${theme}`;
@@ -426,13 +487,19 @@ const App: React.FC = () => {
       setTaskToOpen({ projectId, taskId });
   };
 
-  const handleLogin = (user: User) => {
-      setCurrentUser(user);
-      // Check if user needs onboarding
-      // For demo purposes, we assume if the user doesn't have the flag set, they need it.
-      if (!user.hasCompletedOnboarding) {
-          setShowOnboardingWizard(true);
-      }
+  const handleAuthSuccess = () => {
+    // Auth state will be handled by onAuthStateChange
+    // Check for onboarding will happen there
+    if (currentUser && !currentUser.hasCompletedOnboarding) {
+      setShowOnboardingWizard(true);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+    setSession(null);
+    setActiveLocation({ view: 'home', projectId: null });
   };
 
   // Onboarding Handlers
@@ -617,8 +684,8 @@ const App: React.FC = () => {
   }
 
   // --- AUTH GUARD ---
-  if (!currentUser) {
-      return <AuthScreen users={users} onLogin={handleLogin} />;
+  if (!session || !currentUser) {
+    return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
   }
 
   return (
@@ -671,10 +738,11 @@ const App: React.FC = () => {
       <ProfileSettingsModal
         isOpen={isProfileSettingsOpen}
         onClose={() => setIsProfileSettingsOpen(false)}
-        currentUser={currentUser}
-        onSave={handleUserUpdate}
-        currentTheme={theme}
-        setTheme={setTheme}
+               currentUser={currentUser}
+               onSave={handleUserUpdate}
+               currentTheme={theme}
+               setTheme={setTheme}
+               onLogout={handleLogout}
       />
       <CreateProjectWizard
         isOpen={isCreateProjectWizardOpen}
