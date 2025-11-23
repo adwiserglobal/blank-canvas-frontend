@@ -12,6 +12,7 @@ interface ProfileSettingsModalProps {
   onSave: (user: User) => void;
   currentTheme: string;
   setTheme: (theme: string) => void;
+  onLogout?: () => void;
 }
 
 type Tab = 'profile' | 'billing' | 'notifications' | 'integrations' | 'security' | 'appearance';
@@ -31,7 +32,7 @@ const invoices = [
     { id: 'inv-003', date: 'Aug 01, 2024', amount: '$24.00', status: 'Paid' },
 ];
 
-export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onClose, currentUser, onSave, currentTheme, setTheme }) => {
+export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOpen, onClose, currentUser, onSave, currentTheme, setTheme, onLogout }) => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const { t, language, setLanguage } = useLanguage();
   
@@ -353,6 +354,27 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ isOp
                         </div>
                     </div>
                 </div>
+
+                {onLogout && (
+                  <div className="border-t border-white/10 pt-6">
+                      <div className="flex items-center justify-between">
+                          <div>
+                              <h4 className="text-lg font-semibold text-white">Sign Out</h4>
+                              <p className="text-sm text-gray-400">Sign out from your account on this device.</p>
+                          </div>
+                          <button 
+                              onClick={() => {
+                                  onLogout();
+                                  onClose();
+                              }}
+                              className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-lg text-sm transition-colors flex items-center gap-2"
+                          >
+                              <LogOutIcon className="w-4 h-4" />
+                              Sign Out
+                          </button>
+                      </div>
+                  </div>
+                )}
             </div>
         );
 
