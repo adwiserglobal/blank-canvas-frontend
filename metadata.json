@@ -1,7 +1,0 @@
-{
-  "name": "Nexus Product Suite",
-  "description": "An integrated application for engineers, product designers, and go-to-market professionals to create and manage product projects. It includes features for creating PRDs, managing tasks on a Kanban board, and setting measurable objectives, all within a modern, dark-themed interface inspired by ClickUp with neon accents.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
-}
