@@ -684,8 +684,13 @@ const App: React.FC = () => {
   }
 
   // --- AUTH GUARD ---
-  if (!session || !currentUser) {
+  if (!session) {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
+  }
+
+  // Show loading while fetching user profile
+  if (!currentUser) {
+    return <LoadingScreen onComplete={() => {}} />;
   }
 
   return (
