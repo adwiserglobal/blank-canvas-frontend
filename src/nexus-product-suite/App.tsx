@@ -688,9 +688,13 @@ const App: React.FC = () => {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
   }
 
-  // Show loading while fetching user profile
+  // Wait for user profile to load
   if (!currentUser) {
-    return <LoadingScreen onComplete={() => {}} />;
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-[#0a0a0f]">
+        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
