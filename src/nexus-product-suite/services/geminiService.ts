@@ -7,10 +7,11 @@ if (!API_KEY) {
   console.warn("API_KEY environment variable not set. AI features will not work.");
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+// Only instantiate if API key exists to prevent runtime crash
+const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 export const generateDocumentContent = async (context: string, isSnippet: boolean = false, instructions: string = '', language: 'en' | 'pt' = 'en'): Promise<string> => {
-  if (!API_KEY) {
+  if (!API_KEY || !ai) {
     return Promise.resolve(isSnippet ? " [AI Content Placeholder] " : `
 # ${context}
 This is a placeholder for your document. Please start writing here.
@@ -49,7 +50,7 @@ This is a placeholder for your document. Please start writing here.
 };
 
 export const chatWithDocument = async (docContent: string, userMessage: string): Promise<string> => {
-    if (!API_KEY) {
+    if (!API_KEY || !ai) {
         return "AI is unavailable. Please check API Key.";
     }
 
@@ -81,7 +82,7 @@ export interface AiProjectDetails {
 }
 
 export const generateProjectDetails = async (name: string, description: string): Promise<AiProjectDetails> => {
-    if (!API_KEY) {
+    if (!API_KEY || !ai) {
         throw new Error("API Key not configured");
     }
 
