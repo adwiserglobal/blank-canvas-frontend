@@ -64,8 +64,47 @@ const App: React.FC = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
 
+  // DEV BYPASS: Use this to skip authentication
+  const DEV_BYPASS = false; // Set to true to bypass auth
+  const devUser: User = {
+    id: 'dev-user-123',
+    name: 'Dev User',
+    email: 'dev@example.com',
+    avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=devuser',
+    role: 'Product Manager',
+    hasCompletedOnboarding: true,
+  };
+
   // Initialize Supabase auth
   useEffect(() => {
+    if (DEV_BYPASS) {
+      setCurrentUser(devUser);
+      setAuthInitialized(true);
+      return;
+    }
+
+    // Handle auth callback from URL hash (email confirmation)
+    const handleAuthCallback = async () => {
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token')) {
+        // Clear the hash from URL for cleaner display
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        
+        if (accessToken && refreshToken) {
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          // Clean up URL
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
+    };
+
+    handleAuthCallback();
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -684,12 +723,12 @@ const App: React.FC = () => {
   }
 
   // --- AUTH GUARD ---
-  if (!session) {
+  if (!session && !DEV_BYPASS) {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />;
   }
 
   // Wait for user profile to load
-  if (!currentUser) {
+  if (!currentUser && !DEV_BYPASS) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-[#0a0a0f]">
         <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
@@ -697,12 +736,15 @@ const App: React.FC = () => {
     );
   }
 
+  // Use dev user if bypassing auth
+  const activeUser = DEV_BYPASS ? devUser : currentUser!;
+
   return (
     <>
       <div className="flex h-full w-full bg-transparent text-gray-200 font-sans overflow-hidden">
         <div className="animate-slide-in-left flex-shrink-0 h-full flex">
             <Sidebar 
-              currentUser={currentUser}
+              currentUser={activeUser}
               projects={projects}
               activeLocation={activeLocation}
               setActiveLocation={setActiveLocation} 
@@ -719,7 +761,7 @@ const App: React.FC = () => {
                 activeView={activeLocation.view}
                 notifications={notifications}
                 setNotifications={setNotifications}
-                currentUser={currentUser}
+                currentUser={activeUser}
                 projects={projects}
                 onUpdateProject={handleUpdateProject}
                 taskFilter={taskFilter}
@@ -747,7 +789,7 @@ const App: React.FC = () => {
       <ProfileSettingsModal
         isOpen={isProfileSettingsOpen}
         onClose={() => setIsProfileSettingsOpen(false)}
-               currentUser={currentUser}
+               currentUser={activeUser}
                onSave={handleUserUpdate}
                currentTheme={theme}
                setTheme={setTheme}
