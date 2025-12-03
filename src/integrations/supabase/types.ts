@@ -14,33 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          first_name: string | null
-          has_completed_onboarding: boolean | null
-          id: string
-          last_name: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          first_name?: string | null
-          has_completed_onboarding?: boolean | null
-          id: string
-          last_name?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          first_name?: string | null
-          has_completed_onboarding?: boolean | null
-          id?: string
-          last_name?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
